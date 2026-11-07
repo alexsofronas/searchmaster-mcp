@@ -1,0 +1,18 @@
+{
+  "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
+  "name": "io.github.alexsofronas/searchmaster",
+  "title": "SearchMaster",
+  "description": "Company and competitor ranks across ChatGPT, Claude, Gemini, Grok, and Perplexity.",
+  "version": "1.1.0",
+  "websiteUrl": "https://searchmaster.app",
+  "repository": {
+    "url": "https://github.com/alexsofronas/searchmaster-mcp",
+    "source": "github"
+  },
+  "remotes": [
+    {
+      "type": "streamable-http",
+      "url": "https://oowilxxepsyzpjnubyyk.supabase.co/functions/v1/get-top-competitors"
+    }
+  ]
+}
