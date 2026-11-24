@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import { createHash } from "node:crypto";
 import { readFileSync } from "node:fs";
 import { test } from "node:test";
 
@@ -76,6 +77,11 @@ test("the .well-known routes are on the relay hostname", async () => {
   assert.match(proof.headers.get("Content-Type") ?? "", /^text\/plain/);
   assert.equal(await proof.text(), "searchmaster-host-proof-v1");
   const challenge = await request(`${origin}/.well-known/openai-apps-challenge`);
-  assert([200, 404].includes(challenge.status));
-  if (challenge.status === 200) assert.match(challenge.headers.get("Content-Type") ?? "", /^text\/plain/);
+  assert.equal(challenge.status, 200);
+  assert.match(challenge.headers.get("Content-Type") ?? "", /^text\/plain(?:;|$)/i);
+  const body = Buffer.from(await challenge.arrayBuffer());
+  assert.equal(
+    createHash("sha256").update(body).digest("hex"),
+    "85b7404efc3c50b96c312c32a4dc964651d6bdef6fd40c671242c42dee1a1185",
+  );
 });
