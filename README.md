@@ -33,6 +33,12 @@ Send JSON-RPC over `POST`. Clients using the 2025 MCP protocol can start with `i
 - `DISTRIBUTION.md`: publication routes and candidate directory review prompts.
 - `free_daily_spend.sql`: the daily spend ledger. It does not include the rest of the database.
 
+## Kiro
+
+[![Add to Kiro](https://kiro.dev/images/add-to-kiro.svg)](https://kiro.dev/launch/mcp/add?name=searchmaster&config=%7B%22url%22%3A%22https%3A%2F%2Foowilxxepsyzpjnubyyk.supabase.co%2Ffunctions%2Fv1%2Fget-top-competitors%22%2C%22disabled%22%3Afalse%2C%22autoApprove%22%3A%5B%5D%7D)
+
+The anonymous trial needs no API key. See the [SearchMaster privacy policy](https://searchmaster.app/privacy) or [contact SearchMaster support](https://searchmaster.app/contact).
+
 ## Cursor
 
 ```json
