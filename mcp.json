@@ -1,0 +1,7 @@
+{
+  "mcpServers": {
+    "searchmaster": {
+      "url": "https://oowilxxepsyzpjnubyyk.supabase.co/functions/v1/get-top-competitors"
+    }
+  }
+}
