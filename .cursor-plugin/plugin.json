@@ -1,0 +1,17 @@
+{
+  "name": "searchmaster",
+  "displayName": "SearchMaster",
+  "version": "1.1.0",
+  "description": "Check how brands rank across five AI search tools, find competitor domains and ranked keywords, and draft llms.txt files.",
+  "author": {
+    "name": "SearchMaster"
+  },
+  "homepage": "https://searchmaster.app",
+  "repository": "https://github.com/alexsofronas/searchmaster-mcp",
+  "keywords": [
+    "search-visibility",
+    "competitive-research",
+    "seo"
+  ],
+  "mcpServers": "./mcp.json"
+}
