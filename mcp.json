@@ -1,7 +1,16 @@
 {
+  "$schema": "https://agent-plugins.org/schemas/1.0.0/mcp.schema.json",
   "mcpServers": {
     "searchmaster": {
-      "url": "https://oowilxxepsyzpjnubyyk.supabase.co/functions/v1/get-top-competitors"
+      "type": "streamable-http",
+      "url": "https://oowilxxepsyzpjnubyyk.supabase.co/functions/v1/get-top-competitors",
+      "extensions": {
+        "com.openai": {
+          "auth": {
+            "type": "none"
+          }
+        }
+      }
     }
   }
 }
