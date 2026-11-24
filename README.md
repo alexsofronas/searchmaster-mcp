@@ -65,10 +65,12 @@ cline mcp add searchmaster-account https://oowilxxepsyzpjnubyyk.supabase.co/func
 
 Keep the key in your client’s private configuration. Personal keys identify your account for tool calls. Included use is subject to limits. Any additional eligible usage draws from prepaid credits when enabled for your account. Check MCP settings for your available balance and access.
 
+A client can retry an account request with the same request identifier. Streamable HTTP clients may supply an `Idempotency-Key` header. With the `2026-07-28` protocol, the usual JSON-RPC request ID also supports retry recognition.
+
 ## Deployment prerequisites and limitations
 
 This snapshot is not a self-contained backend deployment. It needs Deno, Supabase environment configuration, trial-quota storage and the `consume_mcp_trial` / `refund_mcp_trial` RPCs, the included daily-spend migration, and the separately deployed competitor, validation, normalization, and model-analysis functions referenced in the handler. Configure provider credentials as server-side environment variables, never in this repository. Deploying this MCP-only entrypoint over the existing `get-top-competitors` backend would remove the non-MCP competitor route it depends on.
 
-Anonymous tool calls reserve estimated usage against the configured limits before they reach paid providers. The snapshot still relies on its host and backend for those checks, so a standalone deployment must configure the corresponding services.
+Anonymous tool calls reserve estimated usage against the configured limits before they reach paid providers. Account use additionally needs the private key, usage reservation and settlement backend. Its services and database definitions are outside this MCP-only snapshot.
 
 Run `node --test tests/index.test.mjs` with Node 26 to check the entrypoint over local HTTP. These tests use a Node adapter for Deno's HTTP server and mock Supabase and environment access. They do not verify paid tools, credentials, deployed backend functions, or production behavior.
