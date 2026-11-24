@@ -8,6 +8,10 @@ Add SearchMaster as a Streamable HTTP connector using the endpoint below. Gemini
 
 Anonymous use is subject to a trial quota and a shared daily spend cap.
 
+## ChatGPT and Codex directory package
+
+The OpenAI upload uses an [anonymous HTTPS relay](https://searchmaster-mcp.lovable.app/mcp). Download the current **searchmaster-openai-upload** artifact using the [directory build instructions](DISTRIBUTION.md#build-the-chatgpt-and-codex-upload). The verified publisher still needs to complete the portal’s domain challenge and submit for review.
+
 ## Tools
 
 - `check_ai_visibility`: for a company, its top competitors and the average rank of each across ChatGPT, Claude, Gemini, Grok, and Perplexity.
