@@ -139,6 +139,14 @@ test("2026 discovery and tools/list work without starting a session", async () =
   assert.deepEqual(body.result.tools.map((tool) => tool.name), tools);
 });
 
+test("request IDs that cannot round-trip as integers are rejected", async () => {
+  const response = await modernPost("tools/list", Number.MAX_SAFE_INTEGER + 1);
+  assert.equal(response.status, 400);
+  const body = await response.json();
+  assert.equal(body.id, null);
+  assert.equal(body.error.code, -32600);
+});
+
 test("2026 methods reject inconsistent transport headers", async () => {
   const response = await modernPost("tools/list", 9, {}, { "Mcp-Method": "ping" });
   assert.equal(response.status, 400);
