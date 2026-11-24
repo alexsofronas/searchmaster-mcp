@@ -34,7 +34,9 @@ The pull request validates the version and URL without publishing. Merging that 
 
 ## Build the ChatGPT and Codex upload
 
-From a checkout with the plugin files and icon committed, run:
+Download the **searchmaster-plugin** artifact from the latest successful [Build SearchMaster plugin ZIP run](https://github.com/alexsofronas/searchmaster-mcp/actions/workflows/build-plugin.yml) on `main`. GitHub wraps the artifact in a download ZIP, so extract `searchmaster-plugin.zip` before opening the OpenAI upload form.
+
+To build the same package from a checkout with the plugin files and icon committed, run:
 
 ```sh
 git archive --format=zip --output=searchmaster-plugin.zip HEAD plugin.json mcp.json icon-512.png

@@ -3,14 +3,7 @@
   "mcpServers": {
     "searchmaster": {
       "type": "streamable-http",
-      "url": "https://oowilxxepsyzpjnubyyk.supabase.co/functions/v1/get-top-competitors",
-      "extensions": {
-        "com.openai": {
-          "auth": {
-            "type": "none"
-          }
-        }
-      }
+      "url": "https://oowilxxepsyzpjnubyyk.supabase.co/functions/v1/get-top-competitors"
     }
   }
 }

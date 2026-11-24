@@ -1,0 +1,79 @@
+name: Build SearchMaster plugin ZIP
+
+on:
+  workflow_dispatch:
+  pull_request:
+    branches: [main]
+    paths:
+      - .github/workflows/build-plugin.yml
+      - plugin.json
+      - mcp.json
+      - server.json
+      - gemini-extension.json
+      - icon-512.png
+  push:
+    branches: [main]
+    paths:
+      - .github/workflows/build-plugin.yml
+      - plugin.json
+      - mcp.json
+      - server.json
+      - gemini-extension.json
+      - icon-512.png
+
+permissions:
+  contents: read
+
+jobs:
+  package:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Check out the package source
+        uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
+        with:
+          persist-credentials: false
+
+      - name: Verify and package the plugin
+        shell: bash
+        run: |
+          set -euo pipefail
+          jq -e --slurpfile registry server.json --slurpfile gemini gemini-extension.json '
+            .version == $registry[0].version and .version == $gemini[0].version and
+            .extensions["com.openai"].interface.logo == "./icon-512.png" and
+            .extensions["com.openai"].interface.composerIcon == "./icon-512.png"
+          ' plugin.json >/dev/null
+          jq -e --slurpfile registry server.json --slurpfile gemini gemini-extension.json '
+            .mcpServers.searchmaster as $server |
+            $server.type == "streamable-http" and
+            $server.url == $registry[0].remotes[0].url and
+            $server.url == $gemini[0].mcpServers.searchmaster.httpUrl
+          ' mcp.json >/dev/null
+          python3 - <<'PY'
+          from pathlib import Path
+          from struct import unpack
+
+          icon = Path("icon-512.png")
+          with icon.open("rb") as image:
+              header = image.read(24)
+          if (
+              icon.stat().st_size > 1_000_000
+              or header[:8] != b"\x89PNG\r\n\x1a\n"
+              or header[12:16] != b"IHDR"
+              or unpack(">II", header[16:24]) != (512, 512)
+          ):
+              raise SystemExit("Expected a 512×512 PNG under 1 MB")
+          PY
+          git archive --format=zip --output=searchmaster-plugin.zip HEAD plugin.json mcp.json icon-512.png
+          diff -u <(printf '%s\n' icon-512.png mcp.json plugin.json) <(unzip -Z1 searchmaster-plugin.zip | sort)
+          for file in icon-512.png mcp.json plugin.json; do
+            unzip -p searchmaster-plugin.zip "$file" | cmp - "$file"
+          done
+
+      - name: Upload the plugin ZIP
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: searchmaster-plugin
+          path: searchmaster-plugin.zip
+          if-no-files-found: error
+          retention-days: 30
