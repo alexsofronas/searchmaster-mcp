@@ -1,0 +1,33 @@
+name: Verify the MCP snapshot
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - .github/workflows/mcp-tests.yml
+      - src/**
+      - tests/**
+      - server.json
+  push:
+    branches: [main]
+    paths:
+      - .github/workflows/mcp-tests.yml
+      - src/**
+      - tests/**
+      - server.json
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@2028fbc5c25fe9cf00d9f06a71cc4710d4507903 # v6.0.0
+        with:
+          node-version: 26
+      - run: node --test tests/index.test.mjs
