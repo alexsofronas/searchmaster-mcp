@@ -47,6 +47,10 @@ The OpenAI ZIP contains `plugin.json`, `mcp.json` and `icon-512.png`. The build 
 
 The archive is ready for a draft upload by a verified publisher. The relay’s [hostname proof](https://searchmaster-mcp.lovable.app/.well-known/searchmaster-host-proof) verifies that the project controls its root routes. Once the portal supplies its token, serve those exact bytes as plain text at [the OpenAI challenge path](https://searchmaster-mcp.lovable.app/.well-known/openai-apps-challenge). The domain remains unverified by OpenAI until that check succeeds. Run the eight cases in the target client and attach a reviewer-accessible walkthrough before submitting.
 
+### Reviewer preview
+
+[Download the SearchMaster MCP walkthrough](https://raw.githubusercontent.com/alexsofronas/searchmaster-mcp/main/searchmaster-mcp-walkthrough.mp4). The recording shows the signed-out production Connect page, a live MCP initialization and tool discovery, and four labeled excerpts from previously recorded production results. OpenAI’s target-client review cases and walkthrough are pending.
+
 ## Listing assets
 
 | Download | Dimensions | Use |
