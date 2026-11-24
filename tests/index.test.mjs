@@ -73,23 +73,89 @@ after(async () => {
   delete globalThis.__mcpTestHandler;
 });
 
-const post = (body) => fetch(base, {
-  method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body),
+const post = (body, headers = {}) => fetch(base, {
+  method: "POST",
+  headers: { "Content-Type": "application/json", ...headers },
+  body: JSON.stringify(body),
 });
+
+const tools = ["check_ai_visibility", "find_competitors", "ranked_keywords", "generate_llms_txt"];
+const releaseVersion = JSON.parse(readFileSync(new URL("../server.json", import.meta.url), "utf8")).version;
+const modernVersion = "2026-07-28";
+
+function modernPost(method, id, params = {}, headers = {}) {
+  return post({
+    jsonrpc: "2.0",
+    id,
+    method,
+    params: {
+      ...params,
+      _meta: {
+        "io.modelcontextprotocol/protocolVersion": modernVersion,
+        "io.modelcontextprotocol/clientCapabilities": {},
+      },
+    },
+  }, {
+    "MCP-Protocol-Version": modernVersion,
+    "Mcp-Method": method,
+    ...headers,
+  });
+}
 
 test("initialize parses POST body and preserves id", async () => {
   const response = await post({ jsonrpc: "2.0", id: 7, method: "initialize", params: { protocolVersion: "2025-06-18" } });
   assert.equal(response.status, 200);
   const body = await response.json();
   assert.equal(body.id, 7);
-  assert.equal(body.result.serverInfo.name, "searchmaster");
+  assert.deepEqual(body.result.serverInfo, { name: "searchmaster", version: releaseVersion });
+  assert.ok(response.headers.get("mcp-session-id"));
   assert.equal(body.result.protocolVersion, "2025-06-18");
 });
 
 test("tools/list returns all four tools", async () => {
   const body = await (await post({ jsonrpc: "2.0", id: 8, method: "tools/list" })).json();
   assert.equal(body.id, 8);
-  assert.deepEqual(body.result.tools.map((tool) => tool.name), ["check_ai_visibility", "find_competitors", "ranked_keywords", "generate_llms_txt"]);
+  assert.deepEqual(body.result.tools.map((tool) => tool.name), tools);
+});
+
+test("2026 discovery and tools/list work without starting a session", async () => {
+  const discovery = await modernPost("server/discover", "discover");
+  assert.equal(discovery.status, 200);
+  assert.equal(discovery.headers.get("mcp-session-id"), null);
+  const { result } = await discovery.json();
+  assert.ok(result.supportedVersions.includes(modernVersion));
+  assert.ok(result.supportedVersions.includes("2025-06-18"));
+  assert.equal(result.resultType, "complete");
+  assert.deepEqual(result._meta["io.modelcontextprotocol/serverInfo"], {
+    name: "searchmaster",
+    version: releaseVersion,
+  });
+
+  const listing = await modernPost("tools/list", "tools");
+  assert.equal(listing.status, 200);
+  const body = await listing.json();
+  assert.equal(body.id, "tools");
+  assert.equal(body.result.resultType, "complete");
+  assert.deepEqual(body.result.tools.map((tool) => tool.name), tools);
+});
+
+test("2026 methods reject inconsistent transport headers", async () => {
+  const response = await modernPost("tools/list", 9, {}, { "Mcp-Method": "ping" });
+  assert.equal(response.status, 400);
+  assert.equal((await response.json()).error.code, -32020);
+});
+
+test("malformed bearer credentials do not fall back to the anonymous trial", async () => {
+  const response = await modernPost("tools/call", "denied", {
+    name: "find_competitors",
+    arguments: { domain: "linear.app" },
+  }, {
+    "Mcp-Name": "find_competitors",
+    Authorization: "Bearer not-a-searchmaster-key",
+  });
+  assert.equal(response.status, 401);
+  assert.match(response.headers.get("www-authenticate"), /invalid_token/);
+  assert.equal((await response.json()).id, "denied");
 });
 
 test("malformed JSON returns parse error with CORS", async () => {
