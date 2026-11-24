@@ -47,6 +47,10 @@ The OpenAI ZIP contains `plugin.json`, `mcp.json` and `icon-512.png`. At build t
 
 The archive is prepared for a draft upload. Publisher submission is pending. Before submitting for review, complete the domain challenge, run the eight cases in the target client and supply a reviewer-accessible walkthrough URL. If the portal requires reviewer credentials, enter them in its secure review form.
 
+### Reviewer preview
+
+[Download the SearchMaster MCP walkthrough](https://raw.githubusercontent.com/alexsofronas/searchmaster-mcp/main/searchmaster-mcp-walkthrough.mp4). The recording shows the signed-out production Connect page, a live MCP initialization and tool discovery, and four labeled excerpts from previously recorded production results. OpenAI’s target-client review cases and walkthrough are pending.
+
 ## Listing assets
 
 | Download | Dimensions | Use |
