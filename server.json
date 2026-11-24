@@ -14,5 +14,14 @@
       "type": "streamable-http",
       "url": "https://oowilxxepsyzpjnubyyk.supabase.co/functions/v1/get-top-competitors"
     }
+  ],
+  "icons": [
+    {
+      "src": "https://raw.githubusercontent.com/alexsofronas/searchmaster-mcp/main/icon-512.png",
+      "mimeType": "image/png",
+      "sizes": [
+        "512x512"
+      ]
+    }
   ]
 }
