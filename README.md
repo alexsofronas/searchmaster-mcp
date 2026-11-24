@@ -1,5 +1,7 @@
 # SearchMaster MCP
 
+[![mcptry](https://mcptry.com/badge/io.github.alexsofronas/searchmaster)](https://mcptry.com/servers/io.github.alexsofronas/searchmaster)
+
 This repository is the SearchMaster MCP server only. The website source stays in a private repository.
 
 Add SearchMaster as a Streamable HTTP connector using the endpoint below. Gemini CLI can also install the extension from this repository. The anonymous trial uses no API key.
