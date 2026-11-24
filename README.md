@@ -2,11 +2,11 @@
 
 This repository is the SearchMaster MCP server only. The website source stays in a private repository.
 
-The public Streamable HTTP endpoint is listed below. Add it as a custom connector in Claude, Cursor or Grok. Gemini CLI can install the extension from this repository. The anonymous trial uses no API key.
+Add SearchMaster as a Streamable HTTP connector using the endpoint below. Gemini CLI can also install the extension from this repository. The anonymous trial uses no API key.
 
 `https://oowilxxepsyzpjnubyyk.supabase.co/functions/v1/get-top-competitors`
 
-Anonymous use is limited by a trial quota and a shared daily spend cap. The default cap is $5.
+Anonymous use is subject to a trial quota and a shared daily spend cap.
 
 ## Tools
 
@@ -15,7 +15,7 @@ Anonymous use is limited by a trial quota and a shared daily spend cap. The defa
 - `ranked_keywords`: keywords a domain ranks for.
 - `generate_llms_txt`: an llms.txt draft for a domain.
 
-`GET` with `Accept: text/event-stream` returns 405. Send JSON-RPC with `POST`.
+Send JSON-RPC over `POST`. Clients using the 2025 MCP protocol can start with `initialize`. Clients using `2026-07-28` can start with `server/discover`. The endpoint does not offer a standalone SSE stream.
 
 ## Files
 
@@ -52,10 +52,25 @@ cline config mcp --json
 
 SearchMaster should appear in the MCP server list. The anonymous trial needs no authentication headers.
 
+## Use an account key
+
+Sign in at [SearchMaster MCP settings](https://searchmaster.app/settings?tab=mcp) to create or revoke a personal key. The [connection guide](https://searchmaster.app/connect) shows client setup options. Use a client that accepts a custom `Authorization` header.
+
+In Cline CLI, with `SEARCHMASTER_MCP_KEY` set in your shell:
+
+```sh
+cline mcp add searchmaster-account https://oowilxxepsyzpjnubyyk.supabase.co/functions/v1/get-top-competitors \
+  --transport http --header "Authorization: Bearer ${SEARCHMASTER_MCP_KEY}" --yes
+```
+
+Keep the key in your client’s private configuration. Personal keys identify your account for tool calls. Included use is subject to limits. Any additional eligible usage draws from prepaid credits when enabled for your account. Check MCP settings for your available balance and access.
+
+A client can retry an account request with the same request identifier. Streamable HTTP clients may supply an `Idempotency-Key` header. With the `2026-07-28` protocol, the usual JSON-RPC request ID also supports retry recognition.
+
 ## Deployment prerequisites and limitations
 
 This snapshot is not a self-contained backend deployment. It needs Deno, Supabase environment configuration, trial-quota storage and the `consume_mcp_trial` / `refund_mcp_trial` RPCs, the included daily-spend migration, and the separately deployed competitor, validation, normalization, and model-analysis functions referenced in the handler. Configure provider credentials as server-side environment variables, never in this repository. Deploying this MCP-only entrypoint over the existing `get-top-competitors` backend would remove the non-MCP competitor route it depends on.
 
-The daily cap uses estimated costs and currently allows calls if the spend ledger fails; it is not a guaranteed billing ceiling. Homepage fetching checks domain syntax but does not validate resolved IP addresses, so deployments need network-level protection against requests to private/internal addresses. Review these controls before exposing a new deployment publicly.
+Anonymous tool calls reserve estimated usage against the configured limits before they reach paid providers. Account use additionally needs the private key, usage reservation and settlement backend. Its services and database definitions are outside this MCP-only snapshot.
 
 Run `node --test tests/index.test.mjs` with Node 26 to check the entrypoint over local HTTP. These tests use a Node adapter for Deno's HTTP server and mock Supabase and environment access. They do not verify paid tools, credentials, deployed backend functions, or production behavior.

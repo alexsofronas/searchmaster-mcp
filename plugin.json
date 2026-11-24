@@ -1,7 +1,7 @@
 {
   "$schema": "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json",
   "name": "searchmaster",
-  "version": "1.1.0",
+  "version": "1.2.0",
   "description": "Compare brand visibility in AI search and research competitor domains and keywords.",
   "author": {
     "name": "SearchMaster",
@@ -19,7 +19,7 @@
       "interface": {
         "displayName": "SearchMaster",
         "shortDescription": "Compare AI search visibility",
-        "longDescription": "SearchMaster helps marketers compare a brand with its competitors across ChatGPT, Claude, Gemini, Grok and Perplexity. Find competitor domains and ranked keywords, or draft an llms.txt file. Results depend on available data. Anonymous use is subject to trial limits.",
+        "longDescription": "SearchMaster helps marketers compare a brand with its competitors across ChatGPT, Claude, Gemini, Grok and Perplexity. Find competitor domains and ranked keywords, or draft an llms.txt file. Results depend on available data. Anonymous use is subject to trial limits. Compatible clients can use a SearchMaster personal key.",
         "developerName": "SearchMaster",
         "category": "Productivity",
         "capabilities": [

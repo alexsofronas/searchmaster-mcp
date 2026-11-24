@@ -65,17 +65,32 @@ jobs:
         with:
           persist-credentials: false
 
-      - name: Check the public MCP handshake
+      - name: Verify the live version in legacy and modern MCP discovery
         shell: bash
         run: |
           set -euo pipefail
-          endpoint="$(jq -er '.remotes[] | select(.type == "streamable-http").url | select(startswith("https://"))' server.json)"
+          endpoint="$(jq -er '.remotes[0].url' server.json)"
+          version="$(jq -er '.version' server.json)"
           curl --fail-with-body --silent --show-error --max-time 20 \
             --header 'Content-Type: application/json' \
             --header 'Accept: application/json, text/event-stream' \
             --data '{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2025-03-26","capabilities":{},"clientInfo":{"name":"searchmaster-publish","version":"1.0.0"}}}' \
             "$endpoint" |
-            jq -e '.jsonrpc == "2.0" and .id == 1 and (.result.protocolVersion | type == "string") and (.result.capabilities.tools | type == "object")' >/dev/null
+            jq -e --arg version "$version" '.jsonrpc == "2.0" and .id == 1 and
+              .result.protocolVersion == "2025-03-26" and
+              .result.serverInfo.version == $version and
+              (.result.capabilities.tools | type == "object")' >/dev/null
+          curl --fail-with-body --silent --show-error --max-time 20 \
+            --header 'Content-Type: application/json' \
+            --header 'Accept: application/json, text/event-stream' \
+            --header 'MCP-Protocol-Version: 2026-07-28' \
+            --header 'Mcp-Method: server/discover' \
+            --data '{"jsonrpc":"2.0","id":2,"method":"server/discover","params":{"_meta":{"io.modelcontextprotocol/protocolVersion":"2026-07-28","io.modelcontextprotocol/clientCapabilities":{}}}}' \
+            "$endpoint" |
+            jq -e --arg version "$version" '.jsonrpc == "2.0" and .id == 2 and
+              .result.resultType == "complete" and
+              .result._meta["io.modelcontextprotocol/serverInfo"].version == $version and
+              (.result.supportedVersions | index("2026-07-28") != null)' >/dev/null
 
       - name: Install cosign
         uses: sigstore/cosign-installer@6f9f17788090df1f26f669e9d70d6ae9567deba6 # v4.1.2

@@ -92,7 +92,8 @@ export function collectNormalizationNames(models: VisibilityModelResult[], limit
 
 export function applyNameMapping(name: string, nameMapping: Record<string, string> | null | undefined): string {
   if (!name || !nameMapping) return name;
-  const direct = nameMapping[name.toLowerCase().trim()];
+  const lookup = name.toLowerCase().trim();
+  const direct = Object.prototype.hasOwnProperty.call(nameMapping, lookup) ? nameMapping[lookup] : undefined;
   if (direct) return direct;
 
   const targetKey = canonicalCompanyKey(name);
@@ -195,4 +196,28 @@ export function summarizeVisibility(input: {
     company_ranks: companyRanks,
     competitors,
   };
+}
+
+
+export async function summarizeVisibilityWithNormalization(
+  input: { company: string; models: VisibilityModelResult[] },
+  normalize: (names: string[]) => Promise<unknown>,
+) {
+  const names = collectNormalizationNames(input.models, 20);
+  let nameMapping: Record<string, string> | undefined;
+  if (names.length > 0) {
+    try {
+      const mapping = await normalize(names);
+      if (mapping && typeof mapping === "object" && !Array.isArray(mapping)) {
+        nameMapping = Object.fromEntries(
+          Object.entries(mapping).filter((entry): entry is [string, string] =>
+            typeof entry[1] === "string" && entry[1].trim().length > 0),
+        );
+      }
+    } catch {
+      // Provider results still contain usable ranks when normalization is unavailable.
+    }
+  }
+
+  return summarizeVisibility({ ...input, nameMapping });
 }
