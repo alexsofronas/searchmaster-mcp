@@ -164,7 +164,7 @@ export function routeMcpRequest(body: McpRequestBody, headers: RequestHeaders = 
   const method = body.method;
   const id = body.id;
   if (id === undefined) return { type: "notification" };
-  if (typeof id !== "string" && !(typeof id === "number" && Number.isInteger(id))) {
+  if (typeof id !== "string" && !(typeof id === "number" && Number.isSafeInteger(id))) {
     return { type: "error", id: null, code: -32600, message: "Invalid request ID", status: 400 };
   }
   if (body.params !== undefined && !isObject(body.params)) {
