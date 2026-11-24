@@ -4,7 +4,7 @@ import { handleSearchMasterMcp, mcpCorsHeaders } from "./searchmasterMcp.ts";
 serve(async (req) => {
   if (req.method !== "POST") return handleSearchMasterMcp(req);
 
-  let body;
+  let body: unknown;
   try {
     body = await req.json();
   } catch {
