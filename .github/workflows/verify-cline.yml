@@ -1,0 +1,72 @@
+name: Verify Cline installation
+
+on:
+  workflow_dispatch:
+  pull_request:
+    branches: [main]
+    paths:
+      - .github/workflows/verify-cline.yml
+      - README.md
+      - server.json
+      - icon-cline-400.png
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 7
+    steps:
+      - name: Check out SearchMaster
+        uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
+        with:
+          persist-credentials: false
+
+      - name: Install the Cline CLI and follow the README
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd "$(mktemp -d)"
+          npm install --no-audit --no-fund cline@3.0.75
+          export PATH="$PWD/node_modules/.bin:$PATH"
+          export CLINE_DIR="$PWD/config" CLINE_DATA_DIR="$PWD/data"
+          export CLINE_MCP_SETTINGS_PATH="$CLINE_DIR/mcp.json"
+          endpoint="$(jq -er '.remotes[0].url' "$GITHUB_WORKSPACE/server.json")"
+          grep -Fx "cline mcp add searchmaster $endpoint --transport http --yes" "$GITHUB_WORKSPACE/README.md"
+          cline mcp add searchmaster "$endpoint" --transport http --yes
+          jq -e --arg url "$endpoint" '.mcpServers.searchmaster.transport | .type == "streamableHttp" and .url == $url' "$CLINE_MCP_SETTINGS_PATH" >/dev/null
+
+      - name: Verify anonymous MCP discovery
+        shell: bash
+        run: |
+          set -euo pipefail
+          endpoint="$(jq -er '.remotes[0].url' server.json)"
+          curl --fail-with-body --silent --show-error --max-time 20 \
+            --header 'Content-Type: application/json' \
+            --header 'Accept: application/json, text/event-stream' \
+            --data '{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2025-03-26","capabilities":{},"clientInfo":{"name":"searchmaster-cline-check","version":"1.0.0"}}}' \
+            "$endpoint" |
+            jq -e '.id == 1 and (.result.capabilities.tools | type == "object")' >/dev/null
+          curl --fail-with-body --silent --show-error --max-time 20 \
+            --header 'Content-Type: application/json' \
+            --header 'Accept: application/json, text/event-stream' \
+            --data '{"jsonrpc":"2.0","id":2,"method":"tools/list","params":{}}' "$endpoint" |
+            jq -e '[.result.tools[].name] | sort == ["check_ai_visibility","find_competitors","generate_llms_txt","ranked_keywords"]' >/dev/null
+
+      - name: Validate the marketplace icon
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          from struct import unpack
+
+          with Path("icon-cline-400.png").open("rb") as image:
+              header = image.read(24)
+          if (
+              header[:8] != b"\x89PNG\r\n\x1a\n"
+              or header[12:16] != b"IHDR"
+              or unpack(">II", header[16:24]) != (400, 400)
+          ):
+              raise SystemExit("Expected a 400×400 PNG")
+          PY

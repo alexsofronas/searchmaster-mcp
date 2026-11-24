@@ -41,6 +41,17 @@ Anonymous use is limited by a trial quota and a shared daily spend cap. The defa
 
 Gemini CLI uses `httpUrl` with the same address. See `gemini-extension.json`.
 
+## Cline CLI
+
+Install the remote connector using the Cline CLI:
+
+```sh
+cline mcp add searchmaster https://oowilxxepsyzpjnubyyk.supabase.co/functions/v1/get-top-competitors --transport http --yes
+cline config mcp --json
+```
+
+SearchMaster should appear in the MCP server list. The anonymous trial needs no authentication headers.
+
 ## Deployment prerequisites and limitations
 
 This snapshot is not a self-contained backend deployment. It needs Deno, Supabase environment configuration, trial-quota storage and the `consume_mcp_trial` / `refund_mcp_trial` RPCs, the included daily-spend migration, and the separately deployed competitor, validation, normalization, and model-analysis functions referenced in the handler. Configure provider credentials as server-side environment variables, never in this repository. Deploying this MCP-only entrypoint over the existing `get-top-competitors` backend would remove the non-MCP competitor route it depends on.
