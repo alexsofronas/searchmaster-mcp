@@ -31,10 +31,11 @@ jobs:
           npm install --no-audit --no-fund cline@3.0.75
           export PATH="$PWD/node_modules/.bin:$PATH"
           export CLINE_DIR="$PWD/config" CLINE_DATA_DIR="$PWD/data"
+          export CLINE_MCP_SETTINGS_PATH="$CLINE_DIR/mcp.json"
           endpoint="$(jq -er '.remotes[0].url' "$GITHUB_WORKSPACE/server.json")"
           grep -Fx "cline mcp add searchmaster $endpoint --transport http --yes" "$GITHUB_WORKSPACE/README.md"
           cline mcp add searchmaster "$endpoint" --transport http --yes
-          cline config mcp --json | jq -e --arg url "$endpoint" 'any(.. | strings; . == $url)' >/dev/null
+          jq -e --arg url "$endpoint" '.mcpServers.searchmaster.url == $url' "$CLINE_MCP_SETTINGS_PATH" >/dev/null
 
       - name: Verify anonymous MCP discovery
         shell: bash
