@@ -59,13 +59,16 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          if command -v magick >/dev/null; then
-            magick icon-512.png -resize 400x400 -strip icon-cline-400.png
-            [[ "$(magick identify -format '%wx%h %m' icon-cline-400.png)" == '400x400 PNG' ]]
-          else
-            convert icon-512.png -resize 400x400 -strip icon-cline-400.png
-            [[ "$(identify -format '%wx%h %m' icon-cline-400.png)" == '400x400 PNG' ]]
-          fi
+          python3 -m pip install --disable-pip-version-check --target "$RUNNER_TEMP/searchmaster-pillow" Pillow==12.0.0
+          PYTHONPATH="$RUNNER_TEMP/searchmaster-pillow" python3 - <<'PY'
+          from PIL import Image
+
+          with Image.open("icon-512.png") as source:
+              source.convert("RGB").resize((400, 400), Image.Resampling.LANCZOS).save("icon-cline-400.png")
+          with Image.open("icon-cline-400.png") as output:
+              assert output.size == (400, 400) and output.format == "PNG"
+              output.verify()
+          PY
 
       - name: Emit the generated public PNG for the repository asset
         if: ${{ always() && hashFiles('icon-cline-400.png') != '' }}
