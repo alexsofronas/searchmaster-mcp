@@ -1,0 +1,103 @@
+name: Publish SearchMaster to the MCP Registry
+
+on:
+  workflow_dispatch:
+  pull_request:
+    branches: [main]
+    paths:
+      - .github/workflows/publish-mcp.yml
+      - .mcp-registry-release.json
+      - server.json
+  push:
+    branches: [main]
+    paths:
+      - .mcp-registry-release.json
+
+permissions: {}
+
+concurrency:
+  group: publish-searchmaster-mcp
+  cancel-in-progress: false
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read
+    steps:
+      - name: Check out the release files
+        uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
+        with:
+          persist-credentials: false
+
+      - name: Validate the registry manifest and approval record
+        shell: bash
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+        run: |
+          set -euo pipefail
+          jq -e '.name == "io.github.alexsofronas/searchmaster" and
+            (.version | test("^[0-9]+\\.[0-9]+\\.[0-9]+$")) and
+            (.remotes | length == 1) and
+            (.remotes[0] | .type == "streamable-http" and (.url | startswith("https://")))' server.json >/dev/null
+
+          approval=.mcp-registry-release.json
+          if [[ "$EVENT_NAME" == push || -f "$approval" ]]; then
+            jq -e --slurpfile manifest server.json '
+              .version == $manifest[0].version and .url == $manifest[0].remotes[0].url
+            ' "$approval" >/dev/null
+          fi
+
+  publish:
+    if: github.repository == 'alexsofronas/searchmaster-mcp' && github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
+    needs: validate
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+      id-token: write
+    env:
+      MCP_PUBLISHER_VERSION: v1.8.1
+    steps:
+      - name: Check out the release manifest
+        uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
+        with:
+          persist-credentials: false
+
+      - name: Check the public MCP handshake
+        shell: bash
+        run: |
+          set -euo pipefail
+          endpoint="$(jq -er '.remotes[] | select(.type == "streamable-http").url | select(startswith("https://"))' server.json)"
+          curl --fail-with-body --silent --show-error --max-time 20 \
+            --header 'Content-Type: application/json' \
+            --header 'Accept: application/json, text/event-stream' \
+            --data '{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2025-03-26","capabilities":{},"clientInfo":{"name":"searchmaster-publish","version":"1.0.0"}}}' \
+            "$endpoint" |
+            jq -e '.jsonrpc == "2.0" and .id == 1 and (.result.protocolVersion | type == "string") and (.result.capabilities.tools | type == "object")' >/dev/null
+
+      - name: Install cosign
+        uses: sigstore/cosign-installer@6f9f17788090df1f26f669e9d70d6ae9567deba6 # v4.1.2
+
+      - name: Verify and extract the MCP Registry publisher
+        shell: bash
+        run: |
+          set -euo pipefail
+          archive=mcp-publisher_linux_amd64.tar.gz
+          base_url="https://github.com/modelcontextprotocol/registry/releases/download/${MCP_PUBLISHER_VERSION}"
+          curl --fail --location --silent --show-error --output "$archive" "$base_url/$archive"
+          curl --fail --location --silent --show-error --output "$archive.sigstore.json" "$base_url/$archive.sigstore.json"
+          cosign verify-blob \
+            --bundle "$archive.sigstore.json" \
+            --certificate-identity "https://github.com/modelcontextprotocol/registry/.github/workflows/release.yml@refs/tags/${MCP_PUBLISHER_VERSION}" \
+            --certificate-oidc-issuer "https://token.actions.githubusercontent.com" \
+            "$archive"
+          tar -xzf "$archive" mcp-publisher
+
+      - name: Publish the manifest
+        shell: bash
+        run: |
+          set -euo pipefail
+          ./mcp-publisher login github-oidc
+          ./mcp-publisher publish

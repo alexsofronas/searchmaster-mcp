@@ -2,7 +2,7 @@
 
 This repository is the SearchMaster MCP server only. The website source stays in a private repository.
 
-The live server is already running. Paste this URL into Claude, Cursor, Gemini CLI, or Grok. No API key is required.
+The public Streamable HTTP endpoint is listed below. Add it as a custom connector in Claude, Cursor or Grok. Gemini CLI can install the extension from this repository. The anonymous trial uses no API key.
 
 `https://oowilxxepsyzpjnubyyk.supabase.co/functions/v1/get-top-competitors`
 
@@ -21,9 +21,10 @@ Anonymous use is limited by a trial quota and a shared daily spend cap. The defa
 
 - `src/`: the server. `src/index.ts` serves only the MCP.
 - `server.json`: MCP Registry manifest.
-- `gemini-extension.json`: Gemini CLI extension manifest. The GitHub topic for this repo should be `gemini-cli-extension`.
+- `gemini-extension.json`: Gemini CLI extension manifest. The repository has the `gemini-cli-extension` topic.
 - `example-prompts.md`: prompts for directory forms.
-- `ICON.md`: spec for a 512px icon. The PNG is not here yet.
+- `icon-512.png`: 512×512 PNG for directory listings.
+- `DISTRIBUTION.md`: publication routes and candidate directory review prompts.
 - `free_daily_spend.sql`: the daily spend ledger. It does not include the rest of the database.
 
 ## Cursor
