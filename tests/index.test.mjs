@@ -153,6 +153,21 @@ test("2026 methods reject inconsistent transport headers", async () => {
   assert.equal((await response.json()).error.code, -32020);
 });
 
+test("personal keys and signed-in sessions use separate account credential types", async () => {
+  const { resolveMcpIdentity } = await import("../src/mcpIdentity.ts");
+  const userId = "11111111-1111-1111-1111-111111111111";
+  const lookups = {
+    resolvePersonalKey: async () => userId,
+    verifySession: async () => userId,
+  };
+  assert.deepEqual(await resolveMcpIdentity(`Bearer smcp_${"a".repeat(64)}`, lookups), {
+    kind: "account", userId, credential: "personal_key",
+  });
+  assert.deepEqual(await resolveMcpIdentity("Bearer header.payload.signature", lookups), {
+    kind: "account", userId, credential: "session",
+  });
+});
+
 test("malformed bearer credentials do not fall back to the anonymous trial", async () => {
   const response = await modernPost("tools/call", "denied", {
     name: "find_competitors",

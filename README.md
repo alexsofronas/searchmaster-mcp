@@ -63,7 +63,7 @@ cline mcp add searchmaster-account https://oowilxxepsyzpjnubyyk.supabase.co/func
   --transport http --header "Authorization: Bearer ${SEARCHMASTER_MCP_KEY}" --yes
 ```
 
-Keep the key in your client’s private configuration. Personal keys identify your account for tool calls. Included use is subject to limits. Any additional eligible usage draws from prepaid credits when enabled for your account. Check MCP settings for your available balance and access.
+Keep the key in your client’s private configuration. Personal keys identify your account for tool calls. Included use is subject to limits. Only a personal MCP key can authorize additional eligible usage from prepaid credits, when enabled for your account. Check MCP settings for your available balance and access.
 
 A client can retry an account request with the same request identifier. Streamable HTTP clients may supply an `Idempotency-Key` header. With the `2026-07-28` protocol, the usual JSON-RPC request ID also supports retry recognition.
 
