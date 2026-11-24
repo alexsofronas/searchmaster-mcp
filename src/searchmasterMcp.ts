@@ -1,7 +1,7 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.50.3";
 import { completeWithWaterfall } from "./llmWaterfall.ts";
 import { validateWebsiteUrl } from "./urlValidation.ts";
-import { resolveMcpIdentity } from "./mcpIdentity.ts";
+import { resolveMcpIdentity, type McpIdentity } from "./mcpIdentity.ts";
 import { addDataForSeoCosts, measuredMicrousd, readCompetitorDataForSeoCost, readDataForSeoCost, UNKNOWN_DATAFORSEO_COST, type DataForSeoCost } from "./dataForSeoCost.ts";
 import {
   MCP_PUBLIC_URL,
@@ -428,14 +428,14 @@ async function accountCredentialScope(req: Request, userId: string): Promise<str
   return `account:${userId}`;
 }
 
-async function accountRequestKey(req: Request, userId: string, id: unknown, name: McpToolName, args: Record<string, unknown>) {
+async function accountRequestKey(req: Request, account: Extract<McpIdentity, { kind: "account" }>, id: unknown, name: McpToolName, args: Record<string, unknown>) {
   const supplied = req.headers.get("Idempotency-Key");
   const inputHash = await sha256(JSON.stringify([name, sortedJson(args)]));
   if (supplied !== null) {
     if (!RETRY_ID.test(supplied)) return null;
-    return { key: await sha256(JSON.stringify(["explicit", supplied])), inputHash };
+    return { key: await sha256(JSON.stringify(["explicit", account.credential, supplied])), inputHash };
   }
-  const scope = await accountCredentialScope(req, userId);
+  const scope = await accountCredentialScope(req, account.userId);
   return { key: await sha256(JSON.stringify(["implicit", scope, id, inputHash])), inputHash };
 }
 
@@ -455,7 +455,7 @@ function accountPaidHold(name: McpToolName, args: Record<string, unknown>): numb
 
 async function admitAccountCall(
   req: Request,
-  userId: string,
+  account: Extract<McpIdentity, { kind: "account" }>,
   id: unknown,
   name: McpToolName,
   args: Record<string, unknown>,
@@ -464,15 +464,15 @@ async function admitAccountCall(
   try {
     const supabase = serviceClient();
     if (!supabase) return { status: "unavailable" };
-    const request = await accountRequestKey(req, userId, id, name, args);
+    const request = await accountRequestKey(req, account, id, name, args);
     if (!request) return { status: "input_rejected" };
-    const paidEnabled = Deno.env.get("MCP_ENABLE_PAID_TOOLS") !== "false";
+    const paidEnabled = account.credential === "personal_key" && Deno.env.get("MCP_ENABLE_PAID_TOOLS") !== "false";
     const holdMicrousd = paidEnabled ? accountPaidHold(name, args) : 0;
     const paidSubsidyMicrousd = paidEnabled && name !== "ranked_keywords"
       ? Math.ceil((freeEstimateUsd - accountPaidHold(name, args) / 1_000_000) * 1_000_000)
       : 0;
     const parameters = {
-      p_user_id: userId,
+      p_user_id: account.userId,
       p_request_key: request.key,
       p_input_hash: request.inputHash,
       p_ip_hash: await sha256(platformIp(req)),
@@ -619,12 +619,14 @@ async function executeTool(id: unknown, name: string, args: Record<string, unkno
       return resultResponse(toolErrorResult("SearchMaster usage accounting is temporarily unavailable"));
     }
     if (identity.kind === "account") {
-      const admission = await admitAccountCall(req, identity.userId, id, name, args, freeEstimateUsd);
+      const admission = await admitAccountCall(req, identity, id, name, args, freeEstimateUsd);
       if (admission.status === "duplicate") return resultResponse(replayBillingResult(admission));
       if (admission.status !== "free" && admission.status !== "paid") {
         const messages = {
           input_rejected: "Use a valid retry identifier with the original tool inputs.",
-          insufficient: "No free calls or eligible prepaid balance are available for this request.",
+          insufficient: identity.credential === "session"
+            ? "This session has no free calls left. Use a SearchMaster personal MCP key for prepaid calls."
+            : "No free calls or eligible prepaid balance are available for this request.",
           rate_limited: "The SearchMaster daily request limit was reached.",
           subsidy_exhausted: SPEND_CAP_MESSAGE,
           billing_unavailable: "SearchMaster prepaid billing is temporarily unavailable.",
