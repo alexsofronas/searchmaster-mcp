@@ -2,6 +2,16 @@ name: Publish SearchMaster to the MCP Registry
 
 on:
   workflow_dispatch:
+  pull_request:
+    branches: [main]
+    paths:
+      - .github/workflows/publish-mcp.yml
+      - .mcp-registry-release.json
+      - server.json
+  push:
+    branches: [main]
+    paths:
+      - .mcp-registry-release.json
 
 permissions: {}
 
@@ -10,8 +20,38 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
+  validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read
+    steps:
+      - name: Check out the release files
+        uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
+        with:
+          persist-credentials: false
+
+      - name: Validate the registry manifest and approval record
+        shell: bash
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+        run: |
+          set -euo pipefail
+          jq -e '.name == "io.github.alexsofronas/searchmaster" and
+            (.version | test("^[0-9]+\\.[0-9]+\\.[0-9]+$")) and
+            (.remotes | length == 1) and
+            (.remotes[0] | .type == "streamable-http" and (.url | startswith("https://")))' server.json >/dev/null
+
+          approval=.mcp-registry-release.json
+          if [[ "$EVENT_NAME" == push || -f "$approval" ]]; then
+            jq -e --slurpfile manifest server.json '
+              .version == $manifest[0].version and .url == $manifest[0].remotes[0].url
+            ' "$approval" >/dev/null
+          fi
+
   publish:
-    if: github.repository == 'alexsofronas/searchmaster-mcp' && github.ref == 'refs/heads/main'
+    if: github.repository == 'alexsofronas/searchmaster-mcp' && github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
+    needs: validate
     runs-on: ubuntu-latest
     timeout-minutes: 10
     permissions:
