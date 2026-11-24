@@ -258,7 +258,7 @@ export function openApiDocument() {
     openapi: "3.1.0",
     info: {
       title: "SearchMaster",
-      version: SERVER_INFO.version,
+      version: "1.2.0",
       description: "Competitor, keyword, llms.txt, and AI visibility checks. DataForSEO cost is passed through with no SearchMaster fee.",
     },
     servers: [{ url: MCP_PUBLIC_URL }],
