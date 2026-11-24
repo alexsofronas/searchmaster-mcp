@@ -1,6 +1,6 @@
 {
   "interface": {
-    "longDescription": "SearchMaster helps marketers compare a brand with its competitors across ChatGPT, Claude, Gemini, Grok and Perplexity. Find competitor domains and ranked keywords, or draft an llms.txt file. Results depend on available data. This connector offers a limited anonymous trial."
+    "longDescription": "SearchMaster helps marketing teams compare a company with its competitors in AI-generated rankings. Find competing websites, look up the search keywords a domain ranks for and draft an llms.txt file for review. The results show which models returned rankings."
   },
   "review": {
     "test_cases": {
