@@ -13,5 +13,6 @@
     "competitive-research",
     "seo"
   ],
-  "mcpServers": "./mcp.json"
+  "mcpServers": "./mcp.json",
+  "logo": "https://raw.githubusercontent.com/alexsofronas/searchmaster-mcp/main/icon-512.png"
 }
