@@ -52,7 +52,7 @@
       ]
     },
     "commerce": false,
-    "commerce_description": "This OpenAI plugin offers a limited anonymous trial and has no purchase, balance top-up, subscription, or payment tool. SearchMaster's separate website offers subscriptions outside this plugin. MCP wallet checkout is disabled for this submission."
+    "commerce_description": "Account holders may separately fund usage on the SearchMaster website. This submitted connector only provides a limited anonymous trial. It does not accept payments, sell or promote credits, or initiate or link to checkout. SearchMaster also offers separate website subscriptions."
   },
   "publication": {
     "release_notes": "Initial OpenAI directory submission for SearchMaster 1.2.0. Compare AI search visibility, find competing domains, look up ranked keywords, and draft llms.txt. Anonymous use is subject to trial limits."
