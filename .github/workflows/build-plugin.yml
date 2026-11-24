@@ -65,6 +65,10 @@ jobs:
               raise SystemExit("Expected a 512×512 PNG under 1 MB")
           PY
           git archive --format=zip --output=searchmaster-plugin.zip HEAD plugin.json mcp.json icon-512.png
+          diff -u <(printf '%s\n' icon-512.png mcp.json plugin.json) <(unzip -Z1 searchmaster-plugin.zip | sort)
+          for file in icon-512.png mcp.json plugin.json; do
+            unzip -p searchmaster-plugin.zip "$file" | cmp - "$file"
+          done
 
       - name: Upload the plugin ZIP
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
