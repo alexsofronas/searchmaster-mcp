@@ -3,7 +3,7 @@
   "name": "io.github.alexsofronas/searchmaster",
   "title": "SearchMaster",
   "description": "Company and competitor ranks across ChatGPT, Claude, Gemini, Grok, and Perplexity.",
-  "version": "1.1.0",
+  "version": "1.2.0",
   "websiteUrl": "https://searchmaster.app",
   "repository": {
     "url": "https://github.com/alexsofronas/searchmaster-mcp",
