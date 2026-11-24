@@ -35,7 +35,7 @@ jobs:
           endpoint="$(jq -er '.remotes[0].url' "$GITHUB_WORKSPACE/server.json")"
           grep -Fx "cline mcp add searchmaster $endpoint --transport http --yes" "$GITHUB_WORKSPACE/README.md"
           cline mcp add searchmaster "$endpoint" --transport http --yes
-          jq -e --arg url "$endpoint" '.mcpServers.searchmaster.url == $url' "$CLINE_MCP_SETTINGS_PATH" >/dev/null
+          jq -e --arg url "$endpoint" '.mcpServers.searchmaster.transport | .type == "streamableHttp" and .url == $url' "$CLINE_MCP_SETTINGS_PATH" >/dev/null
 
       - name: Verify anonymous MCP discovery
         shell: bash
@@ -55,6 +55,7 @@ jobs:
             jq -e '[.result.tools[].name] | sort == ["check_ai_visibility","find_competitors","generate_llms_txt","ranked_keywords"]' >/dev/null
 
       - name: Prepare the Cline marketplace icon
+        if: always()
         shell: bash
         run: |
           set -euo pipefail
@@ -67,9 +68,11 @@ jobs:
           fi
 
       - name: Emit the generated public PNG for the repository asset
+        if: ${{ always() && hashFiles('icon-cline-400.png') != '' }}
         run: base64 -w 76 icon-cline-400.png | sed 's/^/CLINE_MARKETPLACE_PNG /'
 
       - name: Upload the marketplace icon
+        if: ${{ always() && hashFiles('icon-cline-400.png') != '' }}
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
           name: cline-marketplace-icon
