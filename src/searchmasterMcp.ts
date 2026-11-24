@@ -387,7 +387,7 @@ async function callTool(name: McpToolName, args: Record<string, unknown>, client
     case "generate_llms_txt": {
       const domain = normalizeDomain(String(args.domain || ""));
       assertPublicDomain(domain);
-      const generated = await generateLlmsTxt(domain, clientIp);
+      const generated = await generateLlmsTxt(domain, clientIp, usage);
       return { domain, ...generated };
     }
     default: {
