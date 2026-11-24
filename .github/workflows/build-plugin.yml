@@ -7,6 +7,7 @@ on:
     paths:
       - .github/workflows/build-plugin.yml
       - plugin.json
+      - openai-review.json
       - mcp.json
       - server.json
       - gemini-extension.json
@@ -16,6 +17,7 @@ on:
     paths:
       - .github/workflows/build-plugin.yml
       - plugin.json
+      - openai-review.json
       - mcp.json
       - server.json
       - gemini-extension.json
@@ -75,5 +77,45 @@ jobs:
         with:
           name: searchmaster-plugin
           path: searchmaster-plugin.zip
+          if-no-files-found: error
+          retention-days: 30
+
+      - name: Build and verify the separate OpenAI upload ZIP
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p openai-upload
+          cp mcp.json icon-512.png openai-upload/
+          jq --slurpfile review openai-review.json \
+            '.extensions["com.openai"] += $review[0]' plugin.json > openai-upload/plugin.json
+
+          jq -e '
+            .extensions["com.openai"] as $openai |
+            ($openai.review.test_cases.positive | length) == 5 and
+            ($openai.review.test_cases.negative | length) == 3 and
+            ($openai.review.test_cases.positive | all(.[]; .description != "" and .prompt != "" and .tools_triggered != "" and .expected_behavior != "")) and
+            ($openai.review.test_cases.negative | all(.[]; .description != "" and .prompt != "" and .expected_behavior != "")) and
+            $openai.review.commerce == false and
+            ($openai.review.commerce_description | length) > 0 and
+            ($openai.review | has("demo_recording_url") or has("test_credentials") or has("reviewer_instructions") | not) and
+            ($openai.publication.release_notes | length) > 0
+          ' openai-upload/plugin.json >/dev/null
+          diff -u <(jq -S . plugin.json) <(jq -S 'del(.extensions["com.openai"].review, .extensions["com.openai"].publication)' openai-upload/plugin.json)
+          (
+            cd openai-upload
+            zip -q -X ../searchmaster-openai-upload.zip plugin.json mcp.json icon-512.png
+          )
+          unzip -tq searchmaster-openai-upload.zip
+          diff -u <(printf '%s\n' icon-512.png mcp.json plugin.json) <(unzip -Z1 searchmaster-openai-upload.zip | sort)
+          for file in icon-512.png mcp.json plugin.json; do
+            unzip -p searchmaster-openai-upload.zip "$file" | cmp - "openai-upload/$file"
+          done
+          sha256sum searchmaster-openai-upload.zip
+
+      - name: Upload the OpenAI draft package
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: searchmaster-openai-upload
+          path: searchmaster-openai-upload.zip
           if-no-files-found: error
           retention-days: 30

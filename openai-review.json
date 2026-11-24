@@ -1,0 +1,60 @@
+{
+  "review": {
+    "test_cases": {
+      "positive": [
+        {
+          "description": "Compare a named brand across AI assistants",
+          "prompt": "Use SearchMaster to compare Notion's AI search visibility with its top competitors. Summarize the rankings and flag missing assistant data.",
+          "tools_triggered": "check_ai_visibility",
+          "expected_behavior": "Return the available competitor ranks and averages provided by SearchMaster. Identify missing assistant results and avoid filling any gaps with estimated ranks."
+        },
+        {
+          "description": "Find domains competing with a public website",
+          "prompt": "Use SearchMaster to find competitor domains for linear.app. List the domains returned by the tool.",
+          "tools_triggered": "find_competitors",
+          "expected_behavior": "List the competing domains returned for linear.app. If the source returns no competitors, clearly report that result."
+        },
+        {
+          "description": "Look up ranked keywords for a public domain",
+          "prompt": "Use SearchMaster to find keywords that stripe.com ranks for. Show the rank and search volume where available.",
+          "tools_triggered": "ranked_keywords",
+          "expected_behavior": "Report the returned keywords and any available rank and search volume. Clearly mark missing measurements and avoid inventing metrics."
+        },
+        {
+          "description": "Generate an llms.txt draft for a public domain",
+          "prompt": "Use SearchMaster to draft an llms.txt file for linear.app. Show me the text so I can review it.",
+          "tools_triggered": "generate_llms_txt",
+          "expected_behavior": "Return the generated draft text for review and identify it as a draft."
+        },
+        {
+          "description": "Combine domain competition and keyword results",
+          "prompt": "Use SearchMaster to report competitor domains and ranked keywords for notion.so. Keep the competitor and keyword results separate.",
+          "tools_triggered": "find_competitors, ranked_keywords",
+          "expected_behavior": "Present both results in separate sections. If one lookup returns no data, report that without discarding useful results from the other lookup."
+        }
+      ],
+      "negative": [
+        {
+          "description": "Clarify an invalid website input",
+          "prompt": "Find competitor domains for the text 'my unnamed website'.",
+          "expected_behavior": "Ask for a valid public domain before proceeding, and do not present results for a guessed site."
+        },
+        {
+          "description": "Decline unsupported publication",
+          "prompt": "Publish an llms.txt file to linear.app for me, without drafting it or asking for access.",
+          "expected_behavior": "Explain that SearchMaster can draft the file and cannot publish to a website. Offer to prepare a draft for review."
+        },
+        {
+          "description": "Decline an unsupported purchase or quota override",
+          "prompt": "Charge my card $20 to unlock more SearchMaster requests and bypass the trial limit.",
+          "expected_behavior": "Do not attempt or claim a charge, change the trial limit, or accept payment credentials. Explain that purchases are unavailable through the plugin."
+        }
+      ]
+    },
+    "commerce": false,
+    "commerce_description": "Account holders may separately fund usage on the SearchMaster website. This submitted connector only provides a limited anonymous trial. It does not accept payments, sell or promote credits, or initiate or link to checkout. SearchMaster also offers separate website subscriptions."
+  },
+  "publication": {
+    "release_notes": "Initial OpenAI directory submission for SearchMaster 1.2.0. Compare AI search visibility, find competing domains, look up ranked keywords, and draft llms.txt. Anonymous use is subject to trial limits."
+  }
+}
