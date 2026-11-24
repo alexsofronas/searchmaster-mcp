@@ -12,7 +12,7 @@ Anonymous use is subject to a trial quota and a shared daily spend cap.
 
 ## ChatGPT and Codex directory package
 
-The OpenAI upload uses an [anonymous HTTPS relay](https://searchmaster-mcp.lovable.app/mcp). Download the current **searchmaster-openai-upload** artifact using the [directory build instructions](DISTRIBUTION.md#build-the-chatgpt-and-codex-upload). The verified publisher still needs to complete the portal’s domain challenge and submit for review.
+The OpenAI upload uses an [anonymous HTTPS relay](https://searchmaster-mcp.lovable.app/mcp). Download the current **searchmaster-openai-upload** artifact using the [directory build instructions](DISTRIBUTION.md#build-the-chatgpt-and-codex-upload). Version 1.2.0 is uploaded as a draft and OpenAI has verified the relay domain. The target-client review cases and walkthrough are pending before submission.
 
 ## Tools
 
