@@ -19,6 +19,8 @@ Use the Streamable HTTP endpoint in [server.json](server.json). The current conn
 | GitHub Copilot | [GitHub’s curated MCP Registry](https://github.com/mcp) has a separate [onboarding discussion](https://github.com/github/github-mcp-server/discussions/1257). The request calls for an active, latest entry in the Official MCP Registry first. |
 | Zed | [Zed’s publishing docs](https://zed.dev/docs/extensions/mcp-extensions) direct MCP publishers to the Official MCP Registry. |
 | Cline | The [SearchMaster submission #4076](https://github.com/cline/mcp-marketplace/issues/4076) is open and awaiting review. It includes the repository URL, the 400 × 400 marketplace icon and installation verification. |
+| MCPServers.org | The [submission form](https://mcpservers.org/submit) accepted SearchMaster for review at 18:21:28 UTC on November 24, 2026. |
+| MCP.Directory | The [submission form](https://mcp.directory/submit) accepted SearchMaster for review at 18:21:36 UTC on November 24, 2026. |
 | Awesome Remote MCP Servers | Wait for a live Glama connector. Follow the [contribution guide](https://github.com/punkpeye/awesome-remote-mcp-servers/blob/main/CONTRIBUTING.md) to open a pull request containing its connector badge. |
 | Kiro | The [Kiro publisher form](https://kiro.dev/registry/submit/?type=mcp) requires a public GitHub repository, the publisher’s contact information, and agreement to the publisher terms. |
 | MCP.so | The [Remote Server form](https://mcp.so/submit?type=remote-server) displays a $39 payment for immediate listing. |
