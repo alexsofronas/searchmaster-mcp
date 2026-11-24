@@ -1,0 +1,42 @@
+{
+  "$schema": "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json",
+  "name": "searchmaster",
+  "version": "1.1.0",
+  "description": "Compare brand visibility in AI search and research competitor domains and keywords.",
+  "author": {
+    "name": "SearchMaster",
+    "url": "https://searchmaster.app/"
+  },
+  "homepage": "https://searchmaster.app/",
+  "repository": "https://github.com/alexsofronas/searchmaster-mcp",
+  "keywords": [
+    "search visibility",
+    "competitive research",
+    "SEO"
+  ],
+  "extensions": {
+    "com.openai": {
+      "interface": {
+        "displayName": "SearchMaster",
+        "shortDescription": "Compare AI search visibility",
+        "longDescription": "SearchMaster helps marketers compare a brand with its competitors across ChatGPT, Claude, Gemini, Grok and Perplexity. Find competitor domains and ranked keywords, or draft an llms.txt file. Results depend on available data. Anonymous use is subject to trial limits.",
+        "developerName": "SearchMaster",
+        "category": "Productivity",
+        "capabilities": [
+          "Read"
+        ],
+        "websiteURL": "https://searchmaster.app/",
+        "supportURL": "https://searchmaster.app/contact",
+        "privacyPolicyURL": "https://searchmaster.app/privacy",
+        "termsOfServiceURL": "https://searchmaster.app/terms",
+        "defaultPrompt": [
+          "Where does Notion rank against its competitors in AI search?",
+          "Which keywords does stripe.com rank for?",
+          "Find competitor domains for linear.app."
+        ],
+        "composerIcon": "./icon-512.png",
+        "logo": "./icon-512.png"
+      }
+    }
+  }
+}
