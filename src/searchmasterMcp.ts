@@ -398,7 +398,10 @@ async function callTool(name: McpToolName, args: Record<string, unknown>, client
 }
 
 type AccountReservation = { status: "free" | "paid"; reservationId: string; holdMicrousd: number };
-type AccountAdmission = AccountReservation | { status: "insufficient" | "duplicate" | "input_rejected" | "subsidy_exhausted" | "rate_limited" | "billing_unavailable" | "unavailable" };
+type AccountReplay = { status: "duplicate"; reservationId: string; settledMicrousd: number | null; released: boolean; mode: "free" | "paid" };
+type AccountAdmission = AccountReservation | AccountReplay | {
+  status: "insufficient" | "input_rejected" | "subsidy_exhausted" | "rate_limited" | "billing_unavailable" | "unavailable";
+};
 
 function sortedJson(value: unknown): unknown {
   if (Array.isArray(value)) return value.map(sortedJson);
@@ -409,20 +412,31 @@ function sortedJson(value: unknown): unknown {
   return value;
 }
 
-const REQUEST_ID_HEADER = /^[a-z0-9_.:-]{8,128}$/i;
-async function accountRequestKey(req: Request, id: unknown, name: McpToolName, args: Record<string, unknown>) {
+const RETRY_ID = /^[a-z0-9_.:-]{8,128}$/i;
+
+/** Used after account authentication, solely as input to the private idempotency hash. */
+async function accountCredentialScope(req: Request, userId: string): Promise<string> {
+  const token = /^Bearer\s+(\S+)$/i.exec(req.headers.get("Authorization") || "")?.[1] || "";
+  if (token.startsWith("smcp_")) return await sha256(`mcp-credential:${token}`);
+  try {
+    const claims = JSON.parse(atob(token.split(".")[1].replace(/-/g, "+").replace(/_/g, "/")));
+    if (typeof claims.session_id === "string" && RETRY_ID.test(claims.session_id)) return `session:${claims.session_id}`;
+    if (typeof claims.client_id === "string" && RETRY_ID.test(claims.client_id)) return `client:${claims.client_id}`;
+  } catch {
+    // Some verified JWT deployments omit session metadata.
+  }
+  return `account:${userId}`;
+}
+
+async function accountRequestKey(req: Request, userId: string, id: unknown, name: McpToolName, args: Record<string, unknown>) {
   const supplied = req.headers.get("Idempotency-Key");
-  const session = req.headers.get("Mcp-Session-Id");
   const inputHash = await sha256(JSON.stringify([name, sortedJson(args)]));
-  if (supplied && REQUEST_ID_HEADER.test(supplied)) {
-    return { key: await sha256(JSON.stringify(["explicit", supplied])), inputHash, paidAllowed: true };
+  if (supplied !== null) {
+    if (!RETRY_ID.test(supplied)) return null;
+    return { key: await sha256(JSON.stringify(["explicit", supplied])), inputHash };
   }
-  if (session && REQUEST_ID_HEADER.test(session)) {
-    return { key: await sha256(JSON.stringify(["session", session, id])), inputHash, paidAllowed: true };
-  }
-  // Clients without a session or explicit key can use the free trial.
-  const window = Math.floor(Date.now() / (15 * 60 * 1000));
-  return { key: await sha256(JSON.stringify(["free", window, id, inputHash])), inputHash, paidAllowed: false };
+  const scope = await accountCredentialScope(req, userId);
+  return { key: await sha256(JSON.stringify(["implicit", scope, id, inputHash])), inputHash };
 }
 
 function accountPaidHold(name: McpToolName, args: Record<string, unknown>): number {
@@ -450,22 +464,24 @@ async function admitAccountCall(
   try {
     const supabase = serviceClient();
     if (!supabase) return { status: "unavailable" };
-    const { key, inputHash, paidAllowed } = await accountRequestKey(req, id, name, args);
-    const paidEnabled = paidAllowed && Deno.env.get("MCP_ENABLE_PAID_TOOLS") !== "false";
+    const request = await accountRequestKey(req, userId, id, name, args);
+    if (!request) return { status: "input_rejected" };
+    const paidEnabled = Deno.env.get("MCP_ENABLE_PAID_TOOLS") !== "false";
     const holdMicrousd = paidEnabled ? accountPaidHold(name, args) : 0;
     const paidSubsidyMicrousd = paidEnabled && name !== "ranked_keywords"
       ? Math.ceil((freeEstimateUsd - accountPaidHold(name, args) / 1_000_000) * 1_000_000)
       : 0;
-    const { data, error } = await supabase.rpc("reserve_mcp_account_call", {
+    const parameters = {
       p_user_id: userId,
-      p_request_key: key,
-      p_input_hash: inputHash,
+      p_request_key: request.key,
+      p_input_hash: request.inputHash,
       p_ip_hash: await sha256(platformIp(req)),
       p_free_max_microusd: Math.ceil(freeEstimateUsd * 1_000_000),
       p_max_microusd: holdMicrousd,
       p_paid_subsidy_microusd: paidSubsidyMicrousd,
       p_daily_cap_microusd: Math.floor(dailySpendCapUsd() * 1_000_000),
-    });
+    };
+    const { data, error } = await supabase.rpc("reserve_mcp_account_call", parameters);
     if (error) return { status: "unavailable" };
     switch (data?.status) {
       case "free":
@@ -476,8 +492,31 @@ async function admitAccountCall(
         return typeof data.reservation_id === "string"
           ? { status: data.status, reservationId: data.reservation_id, holdMicrousd }
           : { status: "unavailable" };
+      case "duplicate": {
+        if (typeof data.reservation_id !== "string" || (data.mode !== "free" && data.mode !== "paid")) {
+          return { status: "unavailable" };
+        }
+        let receipt = data;
+        if (receipt.settled_microusd == null) {
+          try {
+            const { data: reconciled } = await supabase.rpc("reconcile_mcp_account_call", { p_reservation_id: data.reservation_id });
+            if (reconciled === true) {
+              const { data: current } = await supabase.rpc("reserve_mcp_account_call", parameters);
+              if (current?.status === "duplicate" && current.reservation_id === data.reservation_id) receipt = current;
+            }
+          } catch {
+            // Keep returning the owned receipt if the ledger is temporarily unavailable.
+          }
+        }
+        return {
+          status: "duplicate",
+          reservationId: data.reservation_id,
+          mode: data.mode,
+          settledMicrousd: Number.isSafeInteger(receipt.settled_microusd) ? receipt.settled_microusd : null,
+          released: receipt.released === true,
+        };
+      }
       case "insufficient":
-      case "duplicate":
       case "input_rejected":
       case "subsidy_exhausted":
       case "rate_limited":
@@ -491,19 +530,49 @@ async function admitAccountCall(
   }
 }
 
-async function settleAccountCall(reservation: AccountReservation, actualMicrousd: number | null, succeeded: boolean | null) {
-  try {
-    const supabase = serviceClient();
-    if (!supabase) return false;
-    const { data, error } = await supabase.rpc("settle_mcp_account_call", {
-      p_reservation_id: reservation.reservationId,
-      p_actual_microusd: actualMicrousd,
-      p_succeeded: succeeded,
-    });
-    return !error && data === true;
-  } catch {
-    return false;
+async function settleAccountCall(reservation: AccountReservation, actualMicrousd: number | null, succeeded: boolean) {
+  const supabase = serviceClient();
+  if (!supabase) return false;
+  const parameters = {
+    p_reservation_id: reservation.reservationId,
+    p_actual_microusd: actualMicrousd,
+    p_succeeded: succeeded,
+  };
+
+  async function attempt(fn: "record_mcp_account_settlement" | "settle_mcp_account_call") {
+    try {
+      const client = supabase;
+      if (!client) return false;
+      const { data, error } = await client.rpc(fn, parameters);
+      return !error && data === true;
+    } catch {
+      return false;
+    }
   }
+
+  // A checkpoint lets duplicate requests recover settlement without dispatching providers again.
+  if (!(await attempt("record_mcp_account_settlement"))) await attempt("record_mcp_account_settlement");
+  return await attempt("settle_mcp_account_call") || await attempt("settle_mcp_account_call");
+}
+
+function pendingBillingResult(reservationId: string) {
+  return {
+    ...toolErrorResult(`SearchMaster is still reconciling this request. Reference ${reservationId}.`),
+    structuredContent: { billing_status: "pending", request_reference: reservationId },
+  };
+}
+
+function replayBillingResult(replay: AccountReplay) {
+  if (replay.settledMicrousd === null) return pendingBillingResult(replay.reservationId);
+  const chargedUsd = replay.mode === "paid" ? replay.settledMicrousd / 1_000_000 : 0;
+  const state = replay.released ? "released" : "completed";
+  const message = replay.released
+    ? "This call ended before billable work. Use a new request ID for a fresh call."
+    : "SearchMaster already processed this request. Use a new request ID for a fresh call.";
+  return {
+    ...toolErrorResult(`${message} Charge $${chargedUsd}. Reference ${replay.reservationId}.`),
+    structuredContent: { billing_status: state, charged_usd: chargedUsd, request_reference: replay.reservationId },
+  };
 }
 
 async function executeTool(id: unknown, name: string, args: Record<string, unknown>, req: Request, modern: boolean): Promise<Response> {
@@ -551,10 +620,10 @@ async function executeTool(id: unknown, name: string, args: Record<string, unkno
     }
     if (identity.kind === "account") {
       const admission = await admitAccountCall(req, identity.userId, id, name, args, freeEstimateUsd);
+      if (admission.status === "duplicate") return resultResponse(replayBillingResult(admission));
       if (admission.status !== "free" && admission.status !== "paid") {
         const messages = {
-          duplicate: "This SearchMaster request has already been accepted. Its provider work was not repeated.",
-          input_rejected: "This retry identifier was already used for different tool inputs.",
+          input_rejected: "Use a valid retry identifier with the original tool inputs.",
           insufficient: "No free calls or eligible prepaid balance are available for this request.",
           rate_limited: "The SearchMaster daily request limit was reached.",
           subsidy_exhausted: SPEND_CAP_MESSAGE,
@@ -578,15 +647,10 @@ async function executeTool(id: unknown, name: string, args: Record<string, unkno
     let chargedMicrousd = 0;
     if (reservation) {
       const paid = reservation.status === "paid";
-      if (paid && !cost.complete && cost.usd === 0) {
-        await settleAccountCall(reservation, null, null);
-        return resultResponse(toolErrorResult("DataForSEO did not confirm the cost. The reservation is pending review."));
-      }
+      if (!cost.complete) return resultResponse(pendingBillingResult(reservation.reservationId));
       const measured = paid ? measuredMicrousd(cost.usd) : null;
       const settled = await settleAccountCall(reservation, measured, true);
-      if (!settled) {
-        return resultResponse(toolErrorResult("SearchMaster could not confirm accounting. Retry with the same request identifier."));
-      }
+      if (!settled) return resultResponse(pendingBillingResult(reservation.reservationId));
       if (measured !== null) chargedMicrousd = Math.min(measured, reservation.holdMicrousd);
     } else if (trial) {
       if (name === "ranked_keywords" && cost.complete && cost.usd < freeEstimateUsd) {
@@ -594,23 +658,29 @@ async function executeTool(id: unknown, name: string, args: Record<string, unkno
       }
       await recordCost(trial.clientKey, cost.usd);
     }
-    if (name === "check_ai_visibility") return resultResponse(toolTextResult(payload));
+    const reference = reservation ? { request_reference: reservation.reservationId } : {};
+    if (name === "check_ai_visibility") return resultResponse(toolTextResult({ ...payload, ...reference }));
     return resultResponse(toolTextResult({
       ...payload,
+      ...reference,
       ...(name === "generate_llms_txt" ? { cost: cost.usd } : {}),
       ...pricing(cost, reservation?.status === "paid"),
       charged_usd: chargedMicrousd / 1_000_000,
     }));
   } catch (error) {
     const cost = addDataForSeoCosts(usage.costs);
+    let receipt: Record<string, unknown> | undefined;
     if (reservation) {
-      if (!usage.dispatched) {
-        await settleAccountCall(reservation, null, false);
-      } else if (reservation.status === "paid" && (cost.complete || cost.usd > 0)) {
-        await settleAccountCall(reservation, measuredMicrousd(cost.usd), true);
-      } else {
-        await settleAccountCall(reservation, null, null);
+      if (usage.dispatched && !cost.complete) return resultResponse(pendingBillingResult(reservation.reservationId));
+      const actual = usage.dispatched && reservation.status === "paid" ? measuredMicrousd(cost.usd) : null;
+      if (!(await settleAccountCall(reservation, actual, usage.dispatched))) {
+        return resultResponse(pendingBillingResult(reservation.reservationId));
       }
+      receipt = {
+        billing_status: usage.dispatched ? "completed" : "released",
+        charged_usd: Math.min(actual ?? 0, reservation.holdMicrousd) / 1_000_000,
+        request_reference: reservation.reservationId,
+      };
     } else if (trial && !usage.dispatched) {
       if (anonymousReserved) await refundFreeDailySpend(freeEstimateUsd);
       await refundTrial(trial.clientKey, trial.ipHash);
@@ -620,7 +690,7 @@ async function executeTool(id: unknown, name: string, args: Record<string, unkno
       : error instanceof Error
         ? error.message
         : "Tool failed";
-    return resultResponse(toolErrorResult(message));
+    return resultResponse({ ...toolErrorResult(message), ...(receipt ? { structuredContent: receipt } : {}) });
   }
 }
 
