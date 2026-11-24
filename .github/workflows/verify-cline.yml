@@ -65,6 +65,9 @@ jobs:
             [[ "$(identify -format '%wx%h %m' icon-cline-400.png)" == '400x400 PNG' ]]
           fi
 
+      - name: Emit the generated public PNG for the repository asset
+        run: base64 -w 76 icon-cline-400.png | sed 's/^/CLINE_MARKETPLACE_PNG /'
+
       - name: Upload the marketplace icon
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
