@@ -6,7 +6,7 @@ export const SUPPORTED_PROTOCOL_VERSIONS = [MODERN_PROTOCOL_VERSION, ...LEGACY_P
 
 export const DEFAULT_PROTOCOL_VERSION = "2025-11-25";
 
-export const SERVER_INFO = { name: "searchmaster", version: "1.1.0" };
+export const SERVER_INFO = { name: "searchmaster", version: "1.2.0" };
 
 const TOOL_ANNOTATIONS = {
   title: "",
@@ -258,7 +258,7 @@ export function openApiDocument() {
     openapi: "3.1.0",
     info: {
       title: "SearchMaster",
-      version: "1.1.0",
+      version: SERVER_INFO.version,
       description: "Competitor, keyword, llms.txt, and AI visibility checks. DataForSEO cost is passed through with no SearchMaster fee.",
     },
     servers: [{ url: MCP_PUBLIC_URL }],
