@@ -78,3 +78,7 @@ This snapshot is not a self-contained backend deployment. It needs Deno, Supabas
 Anonymous tool calls reserve estimated usage against the configured limits before they reach paid providers. Account use additionally needs the private key, usage reservation and settlement backend. Its services and database definitions are outside this MCP-only snapshot.
 
 Run `node --test tests/index.test.mjs` with Node 26 to check the entrypoint over local HTTP. These tests use a Node adapter for Deno's HTTP server and mock Supabase and environment access. They do not verify paid tools, credentials, deployed backend functions, or production behavior.
+
+## License
+
+The original public MCP software, configuration and documentation in this repository are available under the [MIT License](LICENSE). SearchMaster names, marks, logos, listing artwork and video are excluded. Third-party dependencies retain their own licenses. Use of the hosted service is governed by the [SearchMaster Terms of Service](https://searchmaster.app/terms).
