@@ -8,7 +8,7 @@ on:
       - .github/workflows/verify-cline.yml
       - README.md
       - server.json
-      - icon-512.png
+      - icon-cline-400.png
 
 permissions:
   contents: read
@@ -54,31 +54,19 @@ jobs:
             --data '{"jsonrpc":"2.0","id":2,"method":"tools/list","params":{}}' "$endpoint" |
             jq -e '[.result.tools[].name] | sort == ["check_ai_visibility","find_competitors","generate_llms_txt","ranked_keywords"]' >/dev/null
 
-      - name: Prepare the Cline marketplace icon
-        if: always()
+      - name: Validate the marketplace icon
         shell: bash
         run: |
-          set -euo pipefail
-          python3 -m pip install --disable-pip-version-check --target "$RUNNER_TEMP/searchmaster-pillow" Pillow==12.0.0
-          PYTHONPATH="$RUNNER_TEMP/searchmaster-pillow" python3 - <<'PY'
-          from PIL import Image
+          python3 - <<'PY'
+          from pathlib import Path
+          from struct import unpack
 
-          with Image.open("icon-512.png") as source:
-              source.convert("RGB").resize((400, 400), Image.Resampling.LANCZOS).save("icon-cline-400.png")
-          with Image.open("icon-cline-400.png") as output:
-              assert output.size == (400, 400) and output.format == "PNG"
-              output.verify()
+          with Path("icon-cline-400.png").open("rb") as image:
+              header = image.read(24)
+          if (
+              header[:8] != b"\x89PNG\r\n\x1a\n"
+              or header[12:16] != b"IHDR"
+              or unpack(">II", header[16:24]) != (400, 400)
+          ):
+              raise SystemExit("Expected a 400×400 PNG")
           PY
-
-      - name: Emit the generated public PNG for the repository asset
-        if: ${{ always() && hashFiles('icon-cline-400.png') != '' }}
-        run: base64 -w 76 icon-cline-400.png | sed 's/^/CLINE_MARKETPLACE_PNG /'
-
-      - name: Upload the marketplace icon
-        if: ${{ always() && hashFiles('icon-cline-400.png') != '' }}
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
-        with:
-          name: cline-marketplace-icon
-          path: icon-cline-400.png
-          if-no-files-found: error
-          retention-days: 30
