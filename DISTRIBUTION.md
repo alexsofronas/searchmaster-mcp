@@ -52,7 +52,7 @@ Open the [latest successful main build](https://github.com/alexsofronas/searchma
 
 The OpenAI ZIP contains `plugin.json`, `mcp.json` and `icon-512.png`. The build copies [openai-mcp.json](openai-mcp.json) to the archive’s `mcp.json` and checks the relay’s legacy and modern MCP discovery, hostname proof and exact challenge response over HTTPS. [openai-review.json](openai-review.json) sets the anonymous-trial description and adds the review cases, commerce disclosure and release notes. The portable ZIP uses the canonical [mcp.json](mcp.json). See [OpenAI’s manifest schema for review and publication](https://developers.openai.com/plugins/deploy/submission#configure-onboarding-review-and-publication).
 
-The OpenAI Plugins portal verified the relay domain on November 24, 2026. The [hostname proof](https://searchmaster-mcp.lovable.app/.well-known/searchmaster-host-proof) and [OpenAI challenge](https://searchmaster-mcp.lovable.app/.well-known/openai-apps-challenge) are live. Version 1.2.0 remains a draft while the target-client evaluation and walkthrough are pending.
+The OpenAI Plugins portal verified the relay domain on November 24, 2026. On November 25 the portal still showed the domain as verified, but its rescan did not complete and it displayed no tool findings. The [hostname proof](https://searchmaster-mcp.lovable.app/.well-known/searchmaster-host-proof) and [OpenAI challenge](https://searchmaster-mcp.lovable.app/.well-known/openai-apps-challenge) are live. Version 1.2.0 remains a draft while the target-client evaluation and walkthrough are pending.
 
 ### Reviewer preview
 
