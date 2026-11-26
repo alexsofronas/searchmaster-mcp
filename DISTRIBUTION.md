@@ -23,7 +23,7 @@ Use the Streamable HTTP endpoint in [server.json](server.json). The current conn
 | Zed | [Zed’s publishing docs](https://zed.dev/docs/extensions/mcp-extensions) direct MCP publishers to the Official MCP Registry. |
 | Goose | [Goose’s directory guidance](https://github.com/aaif-goose/goose/blob/main/documentation/AGENTS.md#mcp-extension-directory) directs publishers to the Official MCP Registry. |
 | Cline | The [SearchMaster submission #4076](https://github.com/cline/mcp-marketplace/issues/4076) is open and awaiting review. It includes the repository URL, the 400 × 400 marketplace icon and installation verification. |
-| MCPServers.org | The [submission form](https://mcpservers.org/submit) accepted SearchMaster for review at 18:21:28 UTC on November 24, 2026. |
+| MCPServers.org | [SearchMaster is published on MCPServers.org](https://mcpservers.org/servers/searchmaster-app-docs-mcp). The listing links to SearchMaster and provides its hosted MCP endpoint. Verified November 26, 2026. |
 | MCP.Directory | The [submission form](https://mcp.directory/submit) accepted SearchMaster for review at 18:21:36 UTC on November 24, 2026. |
 | MCPServer.cc | The [submission form](https://mcpserver.cc/submit) confirmed receipt of SearchMaster for review. |
 | MCP Server Hub | The [submission form](https://mcpserverhub.net/submit) confirmed receipt of SearchMaster with the hosted Streamable HTTP configuration in Research and Data. |
